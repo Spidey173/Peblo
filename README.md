@@ -401,6 +401,4 @@ MIT
 
 Built with ❤️ using React, FastAPI, and Gemini AI
 
-**[Try Peblo →](http://localhost:5173)**
-
 </div>
