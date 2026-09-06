@@ -1,0 +1,246 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --sidebar-width: 260px;
+    color-scheme: dark;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body, html, input, button, textarea, select, kbd {
+    font-family: "Times New Roman", Times, Georgia, serif !important;
+  }
+
+  body {
+    @apply bg-obsidian-950 text-ash-100 antialiased selection:bg-magma/30 selection:text-ember-spark;
+    background-color: #060505;
+  }
+
+  /* Light mode overrides (Clean Parchment Stone with crisp black text) */
+  html:not(.dark) body {
+    @apply bg-[#EFE9E2] text-[#111111];
+    color-scheme: light;
+  }
+
+  /* Force high contrast text on light mode across all ash/obsidian text utilities */
+  html:not(.dark) .text-ash-100,
+  html:not(.dark) .text-ash-200,
+  html:not(.dark) .text-ash-300,
+  html:not(.dark) .text-ash-400 {
+    color: #111111 !important;
+  }
+
+  html:not(.dark) .text-ash-500,
+  html:not(.dark) .text-ash-600,
+  html:not(.dark) .text-ash-700 {
+    color: #4A3E37 !important;
+  }
+
+  html:not(.dark) .border-obsidian-750,
+  html:not(.dark) .border-obsidian-700,
+  html:not(.dark) .border-obsidian-800 {
+    border-color: #D3C7BC !important;
+  }
+
+  html:not(.dark) .bg-obsidian-950,
+  html:not(.dark) .bg-obsidian-900 {
+    background-color: #E7DFD6 !important;
+  }
+
+  html:not(.dark) .bg-obsidian-850,
+  html:not(.dark) .bg-obsidian-800 {
+    background-color: #DFD6CD !important;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-obsidian-700 rounded-full hover:bg-obsidian-600;
+  }
+
+  html:not(.dark) ::-webkit-scrollbar-thumb {
+    @apply bg-[#C5B9AE] rounded-full hover:bg-[#B0A397];
+  }
+}
+
+@layer components {
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-150
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-magma focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian-950
+           disabled:pointer-events-none disabled:opacity-40 select-none active:scale-[0.97];
+  }
+
+  .btn-primary {
+    @apply btn text-white font-medium shadow-magma-sm hover:shadow-magma-glow border border-magma-blaze/40;
+    background: linear-gradient(135deg, #FF3815 0%, #D81A00 100%);
+  }
+
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #FF5722 0%, #E01E00 100%);
+  }
+
+  .btn-secondary {
+    @apply btn bg-obsidian-850 text-ash-300 hover:bg-obsidian-800 hover:text-ash-100 border border-obsidian-700 hover:border-obsidian-600 shadow-sm;
+  }
+
+  html:not(.dark) .btn-secondary {
+    @apply bg-white text-[#1A1412] border-[#D0C4BB] hover:bg-[#F7F2ED] hover:border-[#BDB0A6];
+  }
+
+  .btn-ghost {
+    @apply btn text-ash-500 hover:text-ash-100 hover:bg-obsidian-800/80;
+  }
+
+  html:not(.dark) .btn-ghost {
+    @apply text-[#4E413B] hover:text-[#1A1412] hover:bg-[#DCD2C9];
+  }
+
+  .btn-danger {
+    @apply btn bg-magma-crimson/15 text-red-400 hover:bg-magma-crimson/25 border border-magma-crimson/30;
+  }
+
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+
+  .btn-lg {
+    @apply px-6 py-3 text-base;
+  }
+
+  .btn-icon {
+    @apply btn p-2 rounded-md;
+  }
+
+  /* Obsidian Cards */
+  .card {
+    @apply bg-obsidian-850/90 border border-obsidian-700/80 rounded-lg shadow-obsidian-card backdrop-blur-sm;
+  }
+
+  html:not(.dark) .card {
+    @apply bg-[#E2D7CE] border-[#C7BAB0] shadow-[0_2px_12px_rgba(0,0,0,0.08)];
+  }
+
+  .card-hover {
+    @apply card transition-all duration-200 hover:border-magma/40 hover:bg-obsidian-800 hover:shadow-obsidian-hover cursor-pointer;
+  }
+
+  html:not(.dark) .card-hover {
+    @apply hover:border-magma/60 hover:bg-[#D9CDC3] hover:shadow-md;
+  }
+
+  /* Inputs */
+  .input {
+    @apply w-full rounded-md bg-obsidian-900/90 border border-obsidian-700 px-3.5 py-2.5 text-sm text-ash-100 placeholder-ash-700
+           focus:outline-none focus:border-magma/80 focus:ring-1 focus:ring-magma/40
+           transition-all duration-150;
+  }
+
+  html:not(.dark) .input {
+    @apply bg-white border-[#C2B5AA] text-[#1A1412] placeholder-[#706159]
+           focus:border-magma focus:ring-1 focus:ring-magma/40;
+  }
+
+  .input-label {
+    @apply block text-xs font-mono uppercase tracking-wider text-ash-400 mb-1.5;
+  }
+
+  html:not(.dark) .input-label {
+    @apply text-[#362B27];
+  }
+
+  /* Badges */
+  .badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-mono font-medium tracking-wide uppercase;
+  }
+
+  /* Skeleton */
+  .skeleton {
+    @apply bg-obsidian-800 rounded;
+    background: linear-gradient(90deg, #120F0E 25%, #2B2420 50%, #120F0E 75%);
+    background-size: 200% 100%;
+    animation: heatShimmer 1.8s infinite;
+  }
+
+  html:not(.dark) .skeleton {
+    @apply bg-[#E2D8CF];
+  }
+
+  /* Sidebar */
+  .sidebar-item {
+    @apply flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-ash-400
+           hover:text-ash-100 hover:bg-obsidian-800 transition-all duration-150 cursor-pointer;
+  }
+
+  html:not(.dark) .sidebar-item {
+    @apply text-[#695D55] hover:text-[#1E1916] hover:bg-[#EAE2DA];
+  }
+
+  .sidebar-item-active {
+    @apply sidebar-item text-ash-100 bg-obsidian-800 border-l-2 border-magma;
+  }
+
+  /* Editor */
+  .note-editor {
+    @apply w-full bg-transparent text-ash-200 placeholder-ash-700 resize-none outline-none leading-relaxed text-base;
+  }
+
+  html:not(.dark) .note-editor {
+    @apply text-[#2A2420] placeholder-[#8E7F75];
+  }
+
+  /* Volcanic Lava Text Gradient */
+  .gradient-text {
+    @apply bg-gradient-to-r from-magma via-ember-amber to-ember-spark bg-clip-text text-transparent;
+  }
+
+  /* Glass / Basalt surface */
+  .glass {
+    @apply bg-obsidian-900/80 backdrop-blur-xl border border-obsidian-700/60;
+  }
+
+  html:not(.dark) .glass {
+    @apply bg-white/85 backdrop-blur-xl border-[#E2D8CF];
+  }
+
+  /* Divider */
+  .divider {
+    @apply h-px bg-obsidian-750 my-4;
+  }
+
+  html:not(.dark) .divider {
+    @apply bg-[#E2D8CF];
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Command palette backdrop */
+.command-backdrop {
+  @apply fixed inset-0 z-50 bg-black/85 backdrop-blur-sm;
+}
