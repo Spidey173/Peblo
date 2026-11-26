@@ -114,8 +114,9 @@ async def test_ai_generation_upsert_on_conflict(client, user_a_headers, db_sessi
 
 def test_api_error_paths(client, user_a_headers):
     """Verify error handling for bad inputs, missing resources, and unauthenticated requests."""
-    # Unauthenticated
-    assert client.get("/api/notes").status_code == 401
+    # Unauthenticated (HTTPBearer returns 403 when missing, 401 when invalid)
+    assert client.get("/api/notes").status_code == 403
+    assert client.get("/api/notes", headers={"Authorization": "Bearer invalid"}).status_code == 401
 
     # Missing note
     assert client.get("/api/notes/nonexistent-id", headers=user_a_headers).status_code == 404
