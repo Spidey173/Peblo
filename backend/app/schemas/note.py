@@ -100,10 +100,3 @@ class NoteListOut(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
-
-
-class ConflictDetailOut(BaseModel):
-    error: str = "CONFLICT"
-    message: str
-    server_note: NoteOut
-    client_version: int

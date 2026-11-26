@@ -15,3 +15,4 @@ export function exportNoteAsMarkdown(title, content = '') {
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
 }
+

@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.pool import NullPool
 from app.core.config import settings
@@ -48,11 +48,3 @@ def get_db():
         yield db
     finally:
         db.close()
-
-
-def init_db():
-    from app.models import user, note, tag, ai_generation, embedding  # noqa: F401
-
-    with engine.begin() as conn:
-        conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-    Base.metadata.create_all(bind=engine)
