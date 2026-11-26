@@ -6,7 +6,7 @@
 [![CI Pipeline](https://img.shields.io/badge/CI_Build-Passing-22c55e?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/Spidey173/Peblo)
 [![Pytest Suite](https://img.shields.io/badge/Tests-34_Passed-3b82f6?style=for-the-badge&logo=pytest&logoColor=white)](https://github.com/Spidey173/Peblo)
 [![Groq LPUs](https://img.shields.io/badge/AI_Engine-Groq_Qwen_3.8-orange?style=for-the-badge&logo=fastapi&logoColor=white)](https://groq.com)
-[![Database](https://img.shields.io/badge/Database-SQLite_%2F_Neon_PostgreSQL-00e599?style=for-the-badge&logo=postgresql&logoColor=white)](https://neon.tech)
+[![Database](https://img.shields.io/badge/Database-PostgreSQL_%2B_pgvector-00e599?style=for-the-badge&logo=postgresql&logoColor=white)](https://neon.tech)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
 ---
@@ -18,7 +18,7 @@
 1. **Intelligent Retrieval (RAG)**: Ask questions across your personal knowledge base with sub-second answers backed by dense vector embeddings and lexical BM25 search.
 2. **Low Latency Inference**: Real-time token streaming via Server-Sent Events (SSE) with perceived time-to-first-token under 120ms.
 3. **Multi-Tab Data Safety**: Atomic versioning with Optimistic Concurrency Control (OCC) preventing silent overwrites and data loss.
-4. **Zero-Config Cloud or Local Execution**: Seamlessly runs on local SQLite or cloud Serverless PostgreSQL (Neon) and deploys on Vercel Edge/Serverless.
+4. **Cloud-Native Persistence**: Runs on PostgreSQL + `pgvector` (via Docker locally, or Neon / Supabase in production) and deploys on Vercel Serverless.
 
 ---
 
@@ -54,15 +54,15 @@ Experience the live production build: **[https://peblo17.vercel.app](https://peb
 ┌─────────────────────────────────────┐   ┌─────────────────────────────────────┐
 │       HYBRID RAG RETRIEVAL          │   │         AI INFERENCE ENGINE         │
 │  • 384-dimensional Semantic Vectors │   │  • Groq Cloud LPUs                  │
-│  • In-Memory / SQLite-Vec Indexing  │   │  • Model: Qwen 3.8 / Llama 3        │
+│  • pgvector HNSW Cosine Indexing    │   │  • Model: Qwen 3.8 / Llama 3        │
 │  • Lexical BM25 Scoring & Fusion    │   │  • Low-Latency Token Streaming      │
 └──────────────────┬──────────────────┘   └─────────────────────────────────────┘
                    │
                    ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                         PERSISTENCE LAYER (SQLAlchemy)                          │
-│  • Local: SQLite (Auto-migrating / Serverless /tmp scratchpad)                  │
-│  • Cloud: Neon Serverless PostgreSQL with SSL connection pooling                │
+│                     PERSISTENCE LAYER (SQLAlchemy 2.x + psycopg3)               │
+│  • Local: Docker Compose pgvector/pgvector:pg16                                 │
+│  • Cloud: Managed PostgreSQL + pgvector (Neon / Supabase) with NullPool         │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -108,7 +108,7 @@ Experience the live production build: **[https://peblo17.vercel.app](https://peb
 | :--- | :--- |
 | **Frontend** | React 18, Vite, Tailwind CSS, Lucide Icons, Markdown Preview, Axios |
 | **Backend** | Python 3.11+, FastAPI, Uvicorn, Pydantic v2, HTTPX |
-| **Database** | SQLAlchemy ORM, SQLite, Neon Serverless PostgreSQL |
+| **Database** | SQLAlchemy 2.x ORM, Alembic, PostgreSQL 16 + pgvector (HNSW) |
 | **AI / NLP** | Groq LPUs, Qwen 3.8 / Llama 3, 384-d Vector Embeddings, BM25 Ranking |
 | **Testing & CI** | Pytest, Pytest-Asyncio, GitHub Actions |
 | **Deployment** | Vercel (Edge Functions + Static SPA Hosting) |
@@ -128,32 +128,46 @@ git clone https://github.com/Spidey173/Peblo.git
 cd Peblo
 ```
 
-### 2. Backend Setup
+### 2. Local Setup with Docker (Recommended)
 ```bash
-cd backend
-python3 -m venv venv
-source venv/bin/activate    # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-
-# Create .env from template
 cp .env.example .env
-```
+# Edit .env and add your GROQ_API_KEY and SECRET_KEY
 
-Edit `backend/.env` with your settings:
-```env
-SECRET_KEY=dev-secret-key-minimum-32-characters
-GROQ_API_KEY=your_groq_api_key_here
-GROQ_MODEL=qwen/qwen3.8-27b
-DATABASE_URL=sqlite:///./peblo.db
-```
-
-Start the FastAPI backend:
-```bash
-python3 -m uvicorn app.main:app --reload --port 8000
+# Start PostgreSQL (pgvector:pg16) + FastAPI backend (runs Alembic migrations automatically)
+make up
 ```
 API Documentation will be live at: **[http://localhost:8000/api/docs](http://localhost:8000/api/docs)**
 
-### 3. Frontend Setup
+Or run the backend manually against Docker Postgres:
+```bash
+docker compose up -d db
+cd backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+alembic upgrade head
+python3 -m uvicorn app.main:app --reload --port 8000
+```
+
+### 3. Environment Variables & Vercel Deployment
+- `DATABASE_URL`: **Pooled** PostgreSQL connection string used at runtime (e.g., Neon `-pooler` or Supabase PgBouncer port `6543`). On Vercel, the engine automatically uses `NullPool` + `pool_pre_ping=True`.
+- `DIRECT_URL`: **Direct (unpooled)** PostgreSQL connection string used by Alembic for schema migrations.
+- `SECRET_KEY`, `GROQ_API_KEY`, `GROQ_MODEL`, `CORS_ORIGINS`.
+
+Before deploying to Vercel, run migrations against your production `DIRECT_URL`:
+```bash
+cd backend
+DIRECT_URL="postgresql+psycopg://..." alembic upgrade head
+```
+
+### 4. Legacy SQLite Migration (One-Time)
+If migrating data from legacy `peblo.db` files into PostgreSQL, run the one-off migration script (safe to delete afterwards):
+```bash
+DIRECT_URL="postgresql+psycopg://..." python scripts/migrate_sqlite_to_postgres.py
+```
+
+### 5. Frontend Setup
 In a new terminal window:
 ```bash
 cd frontend
@@ -162,11 +176,10 @@ npm run dev
 ```
 Open **[http://localhost:5173](http://localhost:5173)** in your browser.
 
-### 4. Run the Pytest Test Suite
+### 6. Run the Pytest Test Suite & Linter
 ```bash
-cd backend
-pytest tests/ -v
-# Output: 34 passed in ~8.9s
+make test
+make lint
 ```
 
 ---
