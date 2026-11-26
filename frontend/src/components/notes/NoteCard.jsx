@@ -4,6 +4,7 @@ import { FileText, MoreHorizontal, Archive, Trash2, Share2, Clock, Globe, Flame,
 import clsx from 'clsx'
 import { useState, useRef, useEffect } from 'react'
 import { useUpdateNote, useDeleteNote, useToggleShare } from '@/hooks/useNotes'
+import { exportNoteAsMarkdown } from '@/utils/exportNote'
 import toast from 'react-hot-toast'
 
 export default function NoteCard({ note }) {
@@ -62,16 +63,7 @@ export default function NoteCard({ note }) {
 
   const handleExport = (e) => {
     e.stopPropagation()
-    const cleanTitle = (note.title || 'untitled').replace(/[/\\?%*:|"<>]/g, '-').trim()
-    const blob = new Blob([`# ${note.title}\n\n${note.content || ''}`], { type: 'text/markdown;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${cleanTitle}.md`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+    exportNoteAsMarkdown(note.title, note.content || '')
     setMenuOpen(false)
     toast.success('Exported as .md')
   }

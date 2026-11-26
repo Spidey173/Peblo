@@ -3,6 +3,13 @@ import { authApi } from '@/services/api'
 
 const AuthContext = createContext(null)
 
+function extractAuthError(err, fallback) {
+  const detail = err.response?.data?.detail
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail)) return detail.map((d) => d.msg).join(', ')
+  return fallback
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
@@ -20,41 +27,28 @@ export function AuthProvider({ children }) {
     setUser(userData)
   }, [])
 
-  const login = useCallback(async (email, password) => {
+  const authenticate = useCallback(async (requestFn, fallbackError) => {
     setIsLoading(true)
     try {
-      const data = await authApi.login({ email, password })
+      const data = await requestFn()
       persistUser(data.user, data.access_token)
       return { success: true }
     } catch (err) {
-      let errorMsg = 'Login failed'
-      const detail = err.response?.data?.detail
-      if (typeof detail === 'string') errorMsg = detail
-      else if (Array.isArray(detail)) errorMsg = detail.map(d => d.msg).join(', ')
-      
-      return { success: false, error: errorMsg }
+      return { success: false, error: extractAuthError(err, fallbackError) }
     } finally {
       setIsLoading(false)
     }
   }, [persistUser])
 
-  const signup = useCallback(async (payload) => {
-    setIsLoading(true)
-    try {
-      const data = await authApi.signup(payload)
-      persistUser(data.user, data.access_token)
-      return { success: true }
-    } catch (err) {
-      let errorMsg = 'Signup failed'
-      const detail = err.response?.data?.detail
-      if (typeof detail === 'string') errorMsg = detail
-      else if (Array.isArray(detail)) errorMsg = detail.map(d => d.msg).join(', ')
-      
-      return { success: false, error: errorMsg }
-    } finally {
-      setIsLoading(false)
-    }
-  }, [persistUser])
+  const login = useCallback(
+    (email, password) => authenticate(() => authApi.login({ email, password }), 'Login failed'),
+    [authenticate]
+  )
+
+  const signup = useCallback(
+    (payload) => authenticate(() => authApi.signup(payload), 'Signup failed'),
+    [authenticate]
+  )
 
   const logout = useCallback(() => {
     localStorage.removeItem('peblo_token')

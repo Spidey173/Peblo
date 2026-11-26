@@ -6,6 +6,7 @@ import { SkeletonText, SkeletonBlock } from '@/components/ui/Skeleton'
 import { Clock, Flame, Globe, Lock, Copy, Check, Download, Layers, Zap } from 'lucide-react'
 import { useState } from 'react'
 import MarkdownView from '@/components/shared/MarkdownView'
+import { exportNoteAsMarkdown } from '@/utils/exportNote'
 import toast from 'react-hot-toast'
 
 export default function PublicNotePage() {
@@ -26,16 +27,7 @@ export default function PublicNotePage() {
 
   const exportMarkdown = () => {
     if (!note) return
-    const cleanTitle = (note.title || 'untitled').replace(/[/\\?%*:|"<>]/g, '-').trim()
-    const blob = new Blob([`# ${note.title}\n\n${note.content}`], { type: 'text/markdown;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${cleanTitle}.md`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+    exportNoteAsMarkdown(note.title, note.content)
     toast.success('Markdown file exported!')
   }
 

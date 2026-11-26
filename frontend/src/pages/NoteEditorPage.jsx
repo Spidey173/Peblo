@@ -4,6 +4,7 @@ import { useNote, useUpdateNote, useDeleteNote, useToggleShare } from '@/hooks/u
 import { useTags, useCreateTag } from '@/hooks/useTags'
 import { useGenerateAI } from '@/hooks/useAI'
 import { useDebounce } from '@/hooks/useDebounce'
+import { exportNoteAsMarkdown } from '@/utils/exportNote'
 import { formatDistanceToNow } from 'date-fns'
 import {
   ArrowLeft, Trash2, Archive, Share2, Tag, Flame,
@@ -440,16 +441,7 @@ export default function NoteEditorPage() {
   }
 
   const exportMarkdown = () => {
-    const cleanTitle = (title || 'untitled').replace(/[/\\?%*:|"<>]/g, '-').trim()
-    const blob = new Blob([`# ${title}\n\n${content}`], { type: 'text/markdown;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${cleanTitle}.md`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+    exportNoteAsMarkdown(title, content)
     toast.success('Markdown file exported!')
   }
 

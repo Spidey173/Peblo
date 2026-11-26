@@ -59,22 +59,43 @@ def _content_hash(content: str, mode: str = "insights") -> str:
     return hashlib.sha256(f"{mode}:{content}".encode()).hexdigest()[:16]
 
 
-async def _call_groq_api(messages: List[Dict[str, str]], model_name: str) -> dict:
-    if not settings.GROQ_API_KEY:
-        raise ValueError("GROQ_API_KEY is not configured in backend/.env")
-
-    headers = {
+def _groq_headers() -> Dict[str, str]:
+    return {
         "Authorization": f"Bearer {settings.GROQ_API_KEY}",
         "Content-Type": "application/json",
         "User-Agent": "Peblo-Forge/2.0",
     }
 
-    # Primary model attempt
-    models_to_try = [model_name]
-    fallback_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
-    for fb in fallback_models:
-        if fb not in models_to_try:
-            models_to_try.append(fb)
+
+def _groq_model_candidates(model_name: str) -> List[str]:
+    models = [model_name]
+    for fallback in ("llama-3.3-70b-versatile", "llama-3.1-8b-instant"):
+        if fallback not in models:
+            models.append(fallback)
+    return models
+
+
+def _build_note_messages(
+    note: Note,
+    system_prompt: str,
+    mode: str = "insights",
+    custom_prompt: Optional[str] = None,
+) -> List[Dict[str, str]]:
+    user_text = f"Note Title: {note.title or 'Untitled Fragment'}\n\nNote Content:\n{note.content or ''}"
+    if mode == "custom" and custom_prompt:
+        user_text += f"\n\nUser Directive: {custom_prompt.strip()}"
+    return [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_text},
+    ]
+
+
+async def _call_groq_api(messages: List[Dict[str, str]], model_name: str) -> dict:
+    if not settings.GROQ_API_KEY:
+        raise ValueError("GROQ_API_KEY is not configured in backend/.env")
+
+    headers = _groq_headers()
+    models_to_try = _groq_model_candidates(model_name)
 
     last_error = None
     async with httpx.AsyncClient(timeout=35.0) as client:
@@ -145,23 +166,13 @@ async def generate_ai_insights(
         }
 
     # Select system prompt based on mode
-    if mode == "format":
-        system_prompt = SYSTEM_PROMPT_FORMAT
-    elif mode == "checklist":
-        system_prompt = SYSTEM_PROMPT_CHECKLIST
-    elif mode == "custom":
-        system_prompt = SYSTEM_PROMPT_CUSTOM
-    else:
-        system_prompt = SYSTEM_PROMPT_INSIGHTS
-
-    user_text = f"Note Title: {note.title or 'Untitled Fragment'}\n\nNote Content:\n{content}"
-    if mode == "custom" and custom_prompt:
-        user_text += f"\n\nUser Directive: {custom_prompt.strip()}"
-
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_text},
-    ]
+    prompt_map = {
+        "format": SYSTEM_PROMPT_FORMAT,
+        "checklist": SYSTEM_PROMPT_CHECKLIST,
+        "custom": SYSTEM_PROMPT_CUSTOM,
+    }
+    system_prompt = prompt_map.get(mode, SYSTEM_PROMPT_INSIGHTS)
+    messages = _build_note_messages(note, system_prompt, mode=mode, custom_prompt=custom_prompt)
 
     try:
         model_name = settings.GROQ_MODEL or "qwen/qwen3.8-27b"
@@ -222,17 +233,8 @@ async def stream_groq_inference(messages: List[Dict[str, str]], model_name: str)
         yield f"data: {json.dumps({'error': 'GROQ_API_KEY is not configured', 'done': True})}\n\n"
         return
 
-    headers = {
-        "Authorization": f"Bearer {settings.GROQ_API_KEY}",
-        "Content-Type": "application/json",
-        "User-Agent": "Peblo-Forge/2.0",
-    }
-
-    models_to_try = [model_name]
-    fallback_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
-    for fb in fallback_models:
-        if fb not in models_to_try:
-            models_to_try.append(fb)
+    headers = _groq_headers()
+    models_to_try = _groq_model_candidates(model_name)
 
     stream_success = False
     async with httpx.AsyncClient(timeout=45.0) as client:
@@ -281,36 +283,26 @@ async def stream_groq_inference(messages: List[Dict[str, str]], model_name: str)
 
 async def stream_ai_synthesis(note: Note, mode: str = "insights", custom_prompt: Optional[str] = None):
     """Generates prompt and streams tokens for a given note and mode."""
-    content = note.content or ""
-    if mode == "format":
-        system_prompt = (
+    prompt_map = {
+        "format": (
             "You are an expert markdown editor. Transform the given raw notes into clean, beautifully structured Markdown. "
             "Preserve all facts. Use headers (##), bullet points, and task checkboxes (- [ ]). Stream the clean markdown directly."
-        )
-    elif mode == "checklist":
-        system_prompt = (
+        ),
+        "checklist": (
             "You are a tactical directive extraction specialist. "
             "Extract every action item or deliverable as markdown checkboxes (- [ ] item). Stream the checklist directly."
-        )
-    elif mode == "custom":
-        system_prompt = (
+        ),
+        "custom": (
             "You are an intelligent AI co-pilot for the user's notes in Peblo. "
             "Execute the user's directive accurately, concisely, and thoughtfully based on the note. Stream your answer directly."
-        )
-    else:
-        system_prompt = (
-            "You are an intelligent note analysis assistant for Peblo. "
-            "Synthesize a clear, punchy executive summary and list key takeaways. Stream your response in clean markdown."
-        )
-
-    user_text = f"Note Title: {note.title or 'Untitled Fragment'}\n\nNote Content:\n{content}"
-    if mode == "custom" and custom_prompt:
-        user_text += f"\n\nUser Directive: {custom_prompt.strip()}"
-
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_text},
-    ]
+        ),
+    }
+    default_prompt = (
+        "You are an intelligent note analysis assistant for Peblo. "
+        "Synthesize a clear, punchy executive summary and list key takeaways. Stream your response in clean markdown."
+    )
+    system_prompt = prompt_map.get(mode, default_prompt)
+    messages = _build_note_messages(note, system_prompt, mode=mode, custom_prompt=custom_prompt)
 
     model_name = settings.GROQ_MODEL or "qwen/qwen3.8-27b"
     async for chunk in stream_groq_inference(messages, model_name):
