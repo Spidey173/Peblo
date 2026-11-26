@@ -120,18 +120,6 @@ export default function NoteEditorPage() {
     }
   }, [id])
 
-  // Save shortcut (Cmd+S / Ctrl+S)
-  useEffect(() => {
-    const handler = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
-        e.preventDefault()
-        saveNow()
-      }
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [saveNow])
-
   // Close tag menu on outside click
   useEffect(() => {
     const handler = (e) => {
@@ -210,6 +198,18 @@ export default function NoteEditorPage() {
       }
     }
   }, [id])
+
+  // Save shortcut (Cmd+S / Ctrl+S)
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault()
+        saveNow()
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [saveNow])
 
   const debouncedSave = useDebounce(() => {
     if (!id) return
