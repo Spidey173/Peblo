@@ -1,5 +1,4 @@
 import secrets
-import json
 import logging
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, status, Query

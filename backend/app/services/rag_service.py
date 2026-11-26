@@ -1,8 +1,6 @@
-import json
 import logging
-import math
 import re
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 import numpy as np
 from sqlalchemy.orm import Session
 from app.models.embedding import NoteEmbedding
@@ -303,7 +301,7 @@ Return only valid JSON."""
             "suggested_title": data.get("suggested_title", "Vault Query"),
             "sources": sources,
         }
-    except Exception as e:
+    except Exception:
         logger.exception("Error during Ask Vault RAG inference")
         # Return fallback grounded summary
         return {

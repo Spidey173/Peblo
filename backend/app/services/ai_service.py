@@ -1,7 +1,7 @@
 import hashlib
 import json
 import logging
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict
 from sqlalchemy.orm import Session
 import httpx
 from app.core.config import settings

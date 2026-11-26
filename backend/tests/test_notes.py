@@ -1,4 +1,3 @@
-import pytest
 
 
 def test_create_note_default(client, user_a_headers):

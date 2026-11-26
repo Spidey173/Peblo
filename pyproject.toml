@@ -1,0 +1,7 @@
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+# SQLAlchemy filters require `Column == True` / `Column == False` rather than `is True` or `not Column`.
+ignore = ["E712"]

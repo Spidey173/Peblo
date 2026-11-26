@@ -1,6 +1,3 @@
-import pytest
-from unittest.mock import patch, AsyncMock
-import httpx
 from app.services.rag_service import chunk_markdown, cosine_similarity, generate_embedding, bm25_score
 
 

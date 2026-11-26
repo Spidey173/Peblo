@@ -1,4 +1,3 @@
-import pytest
 
 
 def test_initial_version_is_one(client, user_a_headers):
