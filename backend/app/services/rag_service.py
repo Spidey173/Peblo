@@ -155,7 +155,7 @@ def index_note_chunks(note: Note, db: Session) -> int:
             user_id=note.user_id,
             chunk_index=idx,
             chunk_text=chunk,
-            embedding=json.dumps(vec),
+            embedding=vec,
         )
         db.add(emb_record)
 
@@ -171,31 +171,35 @@ def hybrid_search(
     alpha: float = 0.6,
 ) -> List[Dict[str, Any]]:
     """
-    Hybrid Search: Dense Vector Semantic Similarity + BM25 Lexical Ranking.
+    Hybrid Search: pgvector Cosine Similarity (HNSW) + BM25 Lexical Ranking.
     Score = alpha * VectorScore + (1 - alpha) * BM25Score.
     """
+    q_vec = generate_embedding(query)
+    distance_expr = NoteEmbedding.embedding.cosine_distance(q_vec)
+    candidate_limit = max(top_k * 4, 20)
+
     records = (
-        db.query(NoteEmbedding, Note.title)
+        db.query(
+            NoteEmbedding,
+            Note.title,
+            (1.0 - distance_expr).label("vector_similarity"),
+        )
         .join(Note, NoteEmbedding.note_id == Note.id)
         .filter(NoteEmbedding.user_id == user_id, Note.is_archived == False)
+        .order_by(distance_expr.asc())
+        .limit(candidate_limit)
         .all()
     )
 
     if not records:
         return []
 
-    q_vec = generate_embedding(query)
     q_tokens = re.findall(r"\w+", query.lower())
 
     doc_lengths = []
     chunk_data = []
 
-    for emb, title in records:
-        try:
-            vec = json.loads(emb.embedding)
-        except Exception:
-            vec = [0.0] * 384
-
+    for emb, title, v_sim in records:
         tokens = re.findall(r"\w+", emb.chunk_text.lower())
         doc_lengths.append(len(tokens))
         chunk_data.append({
@@ -203,7 +207,7 @@ def hybrid_search(
             "title": title,
             "chunk_index": emb.chunk_index,
             "chunk_text": emb.chunk_text,
-            "vector": vec,
+            "v_sim": max(0.0, float(v_sim or 0.0)),
             "tokens": tokens,
         })
 
@@ -212,13 +216,11 @@ def hybrid_search(
     scored = []
     max_bm25 = 0.0
 
-    # First pass: compute vector cosine and raw BM25
+    # Compute raw BM25 over pgvector-retrieved candidates
     for item in chunk_data:
-        v_sim = max(0.0, cosine_similarity(q_vec, item["vector"]))
         b_score = bm25_score(q_tokens, item["tokens"], avg_len)
         if b_score > max_bm25:
             max_bm25 = b_score
-        item["v_sim"] = v_sim
         item["b_score"] = b_score
 
     # Normalize BM25 and combine

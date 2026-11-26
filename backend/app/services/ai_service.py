@@ -174,22 +174,31 @@ async def generate_ai_insights(
         suggested_title = data.get("suggested_title", note.title or "Tempered Slate")
         formatted_content = data.get("formatted_content", None)
 
-        # Upsert cache only for primary insights mode
+        # Upsert cache only for primary insights mode using Postgres ON CONFLICT
         if mode == "insights":
-            if existing:
-                existing.summary = summary
-                existing.action_items = json.dumps(action_items)
-                existing.suggested_title = suggested_title
-                existing.content_hash = content_hash
-            else:
-                ai_gen = AIGeneration(
-                    note_id=note.id,
-                    summary=summary,
-                    action_items=json.dumps(action_items),
-                    suggested_title=suggested_title,
-                    content_hash=content_hash,
-                )
-                db.add(ai_gen)
+            from sqlalchemy.dialects.postgresql import insert as pg_insert
+            import uuid
+            from datetime import datetime, timezone
+
+            stmt = pg_insert(AIGeneration).values(
+                id=str(uuid.uuid4()),
+                note_id=note.id,
+                summary=summary,
+                action_items=json.dumps(action_items),
+                suggested_title=suggested_title,
+                content_hash=content_hash,
+            )
+            stmt = stmt.on_conflict_do_update(
+                index_elements=["note_id"],
+                set_={
+                    "summary": stmt.excluded.summary,
+                    "action_items": stmt.excluded.action_items,
+                    "suggested_title": stmt.excluded.suggested_title,
+                    "content_hash": stmt.excluded.content_hash,
+                    "updated_at": datetime.now(timezone.utc),
+                },
+            )
+            db.execute(stmt)
             db.commit()
 
         return {

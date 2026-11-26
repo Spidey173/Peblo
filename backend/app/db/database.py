@@ -1,36 +1,41 @@
 import os
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.pool import NullPool
 from app.core.config import settings
 
-# Normalize database URL for Neon / PostgreSQL or Serverless SQLite
-db_url = settings.DATABASE_URL
 
-# In serverless environments (like Vercel Lambda), local disk is read-only except /tmp
-if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
-    if db_url.startswith("sqlite:///./") or db_url == "sqlite:///peblo.db":
-        db_url = "sqlite:////tmp/peblo.db"
+def normalize_postgres_url(url: str) -> str:
+    """Normalize a PostgreSQL URL to use the psycopg (v3) driver."""
+    if not url:
+        raise ValueError("DATABASE_URL must be set to a PostgreSQL connection string.")
+    if url.startswith("sqlite"):
+        raise ValueError("SQLite is no longer supported; configure a PostgreSQL DATABASE_URL.")
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+psycopg://", 1)
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+psycopg://", 1)
+    return url
 
-if db_url.startswith("postgres://"):
-    db_url = db_url.replace("postgres://", "postgresql://", 1)
 
-connect_args = {}
-if db_url.startswith("sqlite"):
-    connect_args["check_same_thread"] = False
+db_url = normalize_postgres_url(settings.DATABASE_URL)
 
-engine = create_engine(
-    db_url,
-    connect_args=connect_args,
-    pool_pre_ping=True,
+# Serverless-safe pooling: NullPool on Vercel/Lambda (paired with provider pooler e.g. Neon/Supabase),
+# small bounded pool with pre_ping for containerized/long-running servers.
+is_serverless = bool(
+    os.environ.get("VERCEL")
+    or os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
+    or os.environ.get("DB_POOL_MODE") == "null"
 )
 
-# Enforce foreign key constraints for SQLite
-if db_url.startswith("sqlite"):
-    @event.listens_for(engine, "connect")
-    def set_sqlite_pragma(dbapi_connection, connection_record):
-        cursor = dbapi_connection.cursor()
-        cursor.execute("PRAGMA foreign_keys=ON")
-        cursor.close()
+engine_kwargs = {"pool_pre_ping": True}
+if is_serverless:
+    engine_kwargs["poolclass"] = NullPool
+else:
+    engine_kwargs["pool_size"] = 5
+    engine_kwargs["max_overflow"] = 5
+
+engine = create_engine(db_url, **engine_kwargs)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -47,29 +52,7 @@ def get_db():
 
 def init_db():
     from app.models import user, note, tag, ai_generation, embedding  # noqa: F401
-    
-    # Ensure SQLite parent directories exist if database is stored in a directory
-    if db_url.startswith("sqlite:///"):
-        import os
-        db_path = db_url.replace("sqlite:///", "")
-        db_dir = os.path.dirname(db_path)
-        if db_dir and not os.path.exists(db_dir):
-            os.makedirs(db_dir, exist_ok=True)
-            
-    Base.metadata.create_all(bind=engine)
 
-    # Auto-migrate SQLite columns if missing
-    if db_url.startswith("sqlite"):
-        from sqlalchemy import text
-        try:
-            with engine.connect() as conn:
-                res = conn.execute(text("PRAGMA table_info(notes);")).fetchall()
-                col_names = [r[1] for r in res]
-                if col_names and "is_pinned" not in col_names:
-                    conn.execute(text("ALTER TABLE notes ADD COLUMN is_pinned BOOLEAN DEFAULT 0;"))
-                    conn.commit()
-                if col_names and "version" not in col_names:
-                    conn.execute(text("ALTER TABLE notes ADD COLUMN version INTEGER DEFAULT 1;"))
-                    conn.commit()
-        except Exception:
-            pass
+    with engine.begin() as conn:
+        conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+    Base.metadata.create_all(bind=engine)
