@@ -6,3 +6,6 @@ target-version = "py311"
 # SQLAlchemy filters require `Column == True` / `Column == False` rather than `is True` or `not Column`.
 ignore = ["E712"]
 
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
