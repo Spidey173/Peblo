@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AlertTriangle, X, Check, ArrowRight, GitMerge, RefreshCw, Save } from 'lucide-react'
+import { AlertTriangle, X, GitMerge, RefreshCw, Save } from 'lucide-react'
 import clsx from 'clsx'
 
 export default function ConflictModal({

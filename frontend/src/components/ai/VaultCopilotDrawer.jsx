@@ -2,10 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAskVault, useVaultStatus } from '@/hooks/useAI'
 import {
-  Brain, Sparkles, X, CornerDownLeft, Loader2,
-  FileText, ExternalLink, Zap, Layers, Check, Copy
+  Brain, Sparkles, X, CornerDownLeft,
+  FileText, Zap, Layers, Check, Copy
 } from 'lucide-react'
-import clsx from 'clsx'
 import toast from 'react-hot-toast'
 
 export default function VaultCopilotDrawer({ isOpen, onClose }) {

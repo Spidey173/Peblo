@@ -130,7 +130,7 @@ export default function NoteEditorPage() {
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [id])
+  }, [saveNow])
 
   // Close tag menu on outside click
   useEffect(() => {
@@ -322,7 +322,7 @@ export default function NoteEditorPage() {
       const taskMatch = currentLine.match(/^(\s*)-\s+\[[ xX]\]\s*(.*)$/)
       if (taskMatch) {
         e.preventDefault()
-        const [_, indent, text] = taskMatch
+        const [, indent, text] = taskMatch
         if (!text.trim()) {
           const updated = val.slice(0, lineStart) + val.slice(start)
           setContent(updated)
@@ -349,7 +349,7 @@ export default function NoteEditorPage() {
       const bulletMatch = currentLine.match(/^(\s*)[-*]\s+(.*)$/)
       if (bulletMatch) {
         e.preventDefault()
-        const [_, indent, text] = bulletMatch
+        const [, indent, text] = bulletMatch
         if (!text.trim()) {
           const updated = val.slice(0, lineStart) + val.slice(start)
           setContent(updated)
@@ -376,7 +376,7 @@ export default function NoteEditorPage() {
       const numMatch = currentLine.match(/^(\s*)(\d+)\.\s+(.*)$/)
       if (numMatch) {
         e.preventDefault()
-        const [_, indent, numStr, text] = numMatch
+        const [, indent, numStr, text] = numMatch
         if (!text.trim()) {
           const updated = val.slice(0, lineStart) + val.slice(start)
           setContent(updated)

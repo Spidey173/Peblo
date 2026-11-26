@@ -4,7 +4,7 @@ import Sidebar from '@/components/layout/Sidebar'
 import CommandPalette from '@/components/shared/CommandPalette'
 import VaultCopilotDrawer from '@/components/ai/VaultCopilotDrawer'
 import { useCreateNote } from '@/hooks/useNotes'
-import { Menu, Search, Flame, Brain } from 'lucide-react'
+import { Menu, Search, Flame } from 'lucide-react'
 
 export default function AppLayout() {
   const navigate = useNavigate()

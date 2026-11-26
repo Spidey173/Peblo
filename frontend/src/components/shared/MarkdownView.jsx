@@ -1,5 +1,3 @@
-import React from 'react'
-
 /**
  * Lightweight, zero-dependency Markdown renderer tailored for Peblo's Obsidian Forge theme.
  * Handles headings, bold/italic, code blocks, checklists, lists, blockquotes, and tables.

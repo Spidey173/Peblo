@@ -5,7 +5,7 @@ import { useTags, useDeleteTag } from '@/hooks/useTags'
 import { notesApi } from '@/services/api'
 import {
   FileText, Archive, LayoutDashboard, Plus, LogOut,
-  Flame, Moon, Sun, X, Search, Tag, Sparkles, Download, Brain
+  Flame, Moon, Sun, X, Search, Download, Brain
 } from 'lucide-react'
 import { useTheme } from '@/context/ThemeContext'
 import clsx from 'clsx'

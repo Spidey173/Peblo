@@ -1,13 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { dashboardApi } from '@/services/api'
-import { SkeletonBlock } from '@/components/ui/Skeleton'
-import { formatDistanceToNow } from 'date-fns'
-import { useNavigate } from 'react-router-dom'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell
 } from 'recharts'
 import {
-  FileText, Archive, Globe, Tag, Flame, TrendingUp, Clock, Zap, Activity, ShieldCheck, Sparkles, Cpu
+  FileText, Archive, Globe, Tag, Flame, TrendingUp, Zap, ShieldCheck, Cpu
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 
@@ -16,7 +13,6 @@ export default function DashboardPage() {
     queryKey: ['dashboard'],
     queryFn: dashboardApi.stats,
   })
-  const navigate = useNavigate()
   const { user } = useAuth()
 
   if (isLoading) return <DashboardSkeleton />

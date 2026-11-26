@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useNotes } from '@/hooks/useNotes'
-import { Search, FileText, ArrowRight, X, Flame, LayoutDashboard, Archive, Terminal } from 'lucide-react'
+import { Search, FileText, ArrowRight, Flame, LayoutDashboard, Archive } from 'lucide-react'
 import clsx from 'clsx'
 
 export default function CommandPalette({ isOpen, onClose }) {

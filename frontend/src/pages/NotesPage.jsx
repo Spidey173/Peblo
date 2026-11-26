@@ -6,7 +6,7 @@ import { useDebounce } from '@/hooks/useDebounce'
 import NoteCard from '@/components/notes/NoteCard'
 import SkeletonCard from '@/components/ui/Skeleton'
 import ErrorState from '@/components/ui/ErrorState'
-import { Search, Plus, X, Flame, LayoutGrid, List, Clock, Globe, Pin } from 'lucide-react'
+import { Search, Plus, X, Flame, LayoutGrid, List, Clock, Pin } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import clsx from 'clsx'
 

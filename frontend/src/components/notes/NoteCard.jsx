@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { formatDistanceToNow } from 'date-fns'
-import { FileText, MoreHorizontal, Archive, Trash2, Share2, Clock, Globe, Flame, Sparkles, Download, Pin } from 'lucide-react'
+import { MoreHorizontal, Archive, Trash2, Share2, Clock, Globe, Flame, Download, Pin } from 'lucide-react'
 import clsx from 'clsx'
 import { useState, useRef, useEffect } from 'react'
 import { useUpdateNote, useDeleteNote, useToggleShare } from '@/hooks/useNotes'
