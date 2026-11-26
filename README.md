@@ -1,242 +1,179 @@
-# 🔥 PEBLO // THE OBSIDIAN FORGE 2.0
+# 🔥 Peblo — AI Markdown Workspace
 
-> **A high-performance, full-stack AI markdown workspace with Hybrid Semantic RAG, Real-time SSE Inference, and Optimistic Concurrency Control.**
+> **A full-stack AI markdown workspace featuring Hybrid Semantic RAG, real-time SSE token streaming, and Optimistic Concurrency Control (OCC).**
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-peblo17.vercel.app-FF3815?style=for-the-badge&logo=vercel&logoColor=white)](https://peblo17.vercel.app)
 [![CI Pipeline](https://img.shields.io/badge/CI_Build-Passing-22c55e?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/Spidey173/Peblo)
-[![Pytest Suite](https://img.shields.io/badge/Tests-34_Passed-3b82f6?style=for-the-badge&logo=pytest&logoColor=white)](https://github.com/Spidey173/Peblo)
-[![Groq LPUs](https://img.shields.io/badge/AI_Engine-Groq_Qwen_3.8-orange?style=for-the-badge&logo=fastapi&logoColor=white)](https://groq.com)
 [![Database](https://img.shields.io/badge/Database-PostgreSQL_%2B_pgvector-00e599?style=for-the-badge&logo=postgresql&logoColor=white)](https://neon.tech)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
 ---
 
-## 💡 About The Project
+## Overview
 
-**Peblo** is a modern, production-grade AI note-taking canvas inspired by Obsidian and tactile cyberpunk design aesthetics. Unlike standard note apps or basic AI wrappers, Peblo is engineered from the ground up to solve real distributed systems and AI engineering challenges:
+**Peblo** is an AI-native note-taking workspace built with React, FastAPI, and PostgreSQL + `pgvector`:
 
-1. **Intelligent Retrieval (RAG)**: Ask questions across your personal knowledge base with sub-second answers backed by dense vector embeddings and lexical BM25 search.
-2. **Low Latency Inference**: Real-time token streaming via Server-Sent Events (SSE) with perceived time-to-first-token under 120ms.
-3. **Multi-Tab Data Safety**: Atomic versioning with Optimistic Concurrency Control (OCC) preventing silent overwrites and data loss.
-4. **Cloud-Native Persistence**: Runs on PostgreSQL + `pgvector` (via Docker locally, or Neon / Supabase in production) and deploys on Vercel Serverless.
-
----
-
-## 🚀 Live Demo
-
-Experience the live production build: **[https://peblo17.vercel.app](https://peblo17.vercel.app)**
-
-> **Test Account**: You can register your own account or test immediately with any sample login.
+- **Hybrid Semantic RAG:** Combines 384-dimensional `pgvector` HNSW cosine similarity with lexical BM25 scoring to answer questions across your notes with source citations.
+- **Real-Time SSE Streaming:** Streams tokens from Groq LPUs directly to the editor over Server-Sent Events (`EventSourceResponse` / `ReadableStream`).
+- **Optimistic Concurrency Control (OCC):** Atomic `version` checks on note updates return `HTTP 409 Conflict` on parallel edits, with an interactive diff/merge modal on the client.
+- **Multi-Tenant Security:** JWT authentication (`python-jose`, `bcrypt`) with user-scoped queries and public share-token links.
 
 ---
 
-## 🏗️ System Architecture
+## Tech Stack
 
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                                CLIENT (React 18 SPA)                            │
-│  • Vite + Tailwind CSS (Obsidian Dark Cyberpunk Theme)                          │
-│  • Split-Pane Markdown Canvas + Live Preview Rendering                          │
-│  • Real-time SSE EventStream Consumer                                           │
-│  • Global Shortcut Command Palette (⌘K) & Semantic Copilot (⌘J)                 │
-└────────────────────────────────────────┬────────────────────────────────────────┘
-                                         │  HTTPS / REST / SSE
-                                         ▼
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              FASTAPI BACKEND ENGINE                             │
-│  • Asynchronous Request Pipeline (Uvicorn / Starlette)                          │
-│  • JWT Auth & Multi-Tenant Row-Level Security                                   │
-│  • Optimistic Concurrency Engine (Atomic Version Checks: HTTP 409 Conflict)     │
-│  • Streaming Router (EventSourceResponse)                                       │
-└──────────────────┬─────────────────────────────┬────────────────────────────────┘
-                   │                             │
-                   ▼                             ▼
-┌─────────────────────────────────────┐   ┌─────────────────────────────────────┐
-│       HYBRID RAG RETRIEVAL          │   │         AI INFERENCE ENGINE         │
-│  • 384-dimensional Semantic Vectors │   │  • Groq Cloud LPUs                  │
-│  • pgvector HNSW Cosine Indexing    │   │  • Model: Qwen 3.8 / Llama 3        │
-│  • Lexical BM25 Scoring & Fusion    │   │  • Low-Latency Token Streaming      │
-└──────────────────┬──────────────────┘   └─────────────────────────────────────┘
-                   │
-                   ▼
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                     PERSISTENCE LAYER (SQLAlchemy 2.x + psycopg3)               │
-│  • Local: Docker Compose pgvector/pgvector:pg16                                 │
-│  • Cloud: Managed PostgreSQL + pgvector (Neon / Supabase) with NullPool         │
-└─────────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## ⚡ Key Engineering Highlights (What Makes This Stand Out)
-
-### 1. 🧠 Hybrid Semantic RAG ("Ask Your Notes" Copilot)
-- **Dense Vectors + Lexical Search**: Combines 384-dimensional dense semantic vectors with BM25 lexical token matching:
-  $$\text{Hybrid Score} = 0.6 \cdot \text{VectorSimilarity} + 0.4 \cdot \text{BM25Relevance}$$
-- **Chunking Pipeline**: Automatically splits note content into overlapping chunks upon saving and refreshes embedding vectors.
-- **Accurate Source Attribution**: Generates answers grounded strictly in note data with interactive source citation pills `[Source: Note Title]`.
-
-### 2. ⚡ Real-Time Streaming via Server-Sent Events (SSE)
-- Streams tokens from Groq LPUs straight to the editor using `EventSourceResponse` and `ReadableStream`.
-- Features live typewriter animations, eliminating 3–5 second blocking JSON wait times and dropping perceived TTFT to **< 120ms**.
-
-### 3. 🛡️ Optimistic Concurrency Control (OCC)
-- Notes maintain an atomic integer column `version: int`.
-- Saves execute conditional updates:
-  ```sql
-  UPDATE notes 
-  SET content = :new_content, version = version + 1 
-  WHERE id = :id AND version = :expected_version;
-  ```
-- If another tab or session modified the note in parallel, the server returns an **HTTP 409 Conflict**. The frontend displays an interactive side-by-side diff modal allowing you to:
-  1. *Force Overwrite Server*
-  2. *Discard Local & Keep Server*
-  3. *Merge & Append Both*
-
-### 4. 🧪 Automated 34-Test Pytest Suite
-- **100% automated test coverage** across critical paths:
-  - `test_auth.py`: JWT signing, bcrypt password verification, expired tokens, input validation.
-  - `test_notes.py`: Multi-tenant isolation (User A cannot access User B's notes), soft-delete, tagging.
-  - `test_concurrency.py`: Rapid multi-threaded concurrent edits and OCC conflict detection.
-  - `test_ai_resilience.py`: Groq rate limit handling, vector cosine similarity, BM25 scoring, and SSE streaming.
-
----
-
-## 💻 Tech Stack
-
-| Category | Technologies |
+| Layer | Technologies |
 | :--- | :--- |
-| **Frontend** | React 18, Vite, Tailwind CSS, Lucide Icons, Markdown Preview, Axios |
-| **Backend** | Python 3.11+, FastAPI, Uvicorn, Pydantic v2, HTTPX |
-| **Database** | SQLAlchemy 2.x ORM, Alembic, PostgreSQL 16 + pgvector (HNSW) |
-| **AI / NLP** | Groq LPUs, Qwen 3.8 / Llama 3, 384-d Vector Embeddings, BM25 Ranking |
-| **Testing & CI** | Pytest, Pytest-Asyncio, GitHub Actions |
-| **Deployment** | Vercel (Edge Functions + Static SPA Hosting) |
+| **Frontend** | React 18, Vite, Tailwind CSS, TanStack React Query, React Router, Axios, Recharts, Lucide Icons |
+| **Backend** | Python 3.11, FastAPI, Uvicorn, Pydantic v2, SQLAlchemy 2.x, Alembic, HTTPX |
+| **Database** | PostgreSQL 16 + `pgvector` (HNSW cosine index), `psycopg` v3 |
+| **AI / RAG** | Groq API (Qwen / Llama fallback chain), 384-d embeddings, BM25 lexical fusion |
+| **Tooling & CI** | Pytest, Ruff, ESLint, Pre-commit, Docker Compose, GitHub Actions, Vercel |
 
 ---
 
-## 🛠️ Step-by-Step Local Setup Guide
+## Architecture
 
-### Prerequisites
-- Python 3.10 or higher
-- Node.js 18 or higher & npm
-- Free Groq API Key ([console.groq.com](https://console.groq.com))
+```mermaid
+flowchart TD
+    Client["React 18 SPA (Vite + Tailwind + React Query)"]
+    API["FastAPI Backend (Auth, Notes, Tags, Dashboard, AI)"]
+    OCC["Optimistic Concurrency Control (version check -> 409)"]
+    RAG["Hybrid RAG Service (pgvector HNSW + BM25)"]
+    Groq["Groq LPU Inference (REST + SSE Streaming)"]
+    DB[("PostgreSQL 16 + pgvector")]
 
-### 1. Clone the Repository
-```bash
-git clone https://github.com/Spidey173/Peblo.git
-cd Peblo
+    Client -- "HTTPS / REST / SSE" --> API
+    API --> OCC
+    API --> RAG
+    API --> Groq
+    OCC --> DB
+    RAG --> DB
 ```
 
-### 2. Local Setup with Docker (Recommended)
+---
+
+## Folder Structure
+
+```text
+Peblo/
+├── .github/workflows/ci.yml       # GitHub Actions CI (Postgres + pgvector, Ruff, Pytest, Vite build)
+├── .env.example                   # Root environment variables template
+├── .pre-commit-config.yaml        # Ruff & hygiene pre-commit hooks
+├── Makefile                       # Common dev, test, lint, and build commands
+├── pyproject.toml                 # Ruff lint & format configuration
+├── vercel.json                    # Vercel rewrites (/api/* -> api/index.py)
+├── api/
+│   ├── index.py                   # Vercel serverless FastAPI entrypoint
+│   └── requirements.txt           # Serverless runtime dependencies
+├── backend/
+│   ├── Dockerfile
+│   ├── alembic/                   # Alembic schema migrations (pgvector)
+│   ├── alembic.ini
+│   ├── requirements.txt
+│   ├── app/
+│   │   ├── main.py                # FastAPI app factory & router registration
+│   │   ├── api/                   # Route handlers (auth, notes, tags, ai, dashboard)
+│   │   ├── core/                  # Config, JWT security, FastAPI dependencies
+│   │   ├── db/                    # SQLAlchemy engine, pooling, session lifecycle
+│   │   ├── models/                # ORM models (User, Note, Tag, AIGeneration, NoteEmbedding)
+│   │   ├── schemas/               # Pydantic v2 request/response schemas
+│   │   └── services/              # Groq AI service & Hybrid RAG engine
+│   └── tests/                     # Pytest suite (auth, notes, OCC, RAG, AI resilience)
+├── frontend/
+│   ├── .eslintrc.cjs              # ESLint config for React 18 + Vite
+│   ├── .env.example               # Frontend env template (VITE_API_URL)
+│   ├── package.json
+│   ├── vite.config.js
+│   └── src/
+│       ├── components/            # UI, notes, AI copilot drawer, shared components
+│       ├── context/               # AuthContext, ThemeContext
+│       ├── hooks/                 # React Query & debounce hooks
+│       ├── layouts/               # AppLayout, AuthLayout
+│       ├── pages/                 # Route pages
+│       ├── services/              # Axios client & SSE streaming helper
+│       └── utils/                 # Shared frontend utilities (markdown export)
+└── scripts/
+    └── migrate_sqlite_to_postgres.py
+```
+
+---
+
+## Setup & Environment Variables
+
+### 1. Configure Environment
+
 ```bash
 cp .env.example .env
-# Edit .env and add your GROQ_API_KEY and SECRET_KEY
+```
 
-# Start PostgreSQL (pgvector:pg16) + FastAPI backend (runs Alembic migrations automatically)
+| Variable | Description | Default / Example |
+| :--- | :--- | :--- |
+| `SECRET_KEY` | JWT signing secret (min 32 chars in production) | `change-me-in-production` |
+| `ALGORITHM` | JWT signing algorithm | `HS256` |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | JWT expiration in minutes | `10080` |
+| `DATABASE_URL` | Pooled PostgreSQL URL (`psycopg` driver) | `postgresql+psycopg://peblo:peblo@localhost:5432/peblo` |
+| `DIRECT_URL` | Direct (unpooled) PostgreSQL URL for Alembic | `postgresql+psycopg://peblo:peblo@localhost:5432/peblo` |
+| `GROQ_API_KEY` | Groq API key ([console.groq.com](https://console.groq.com)) | — |
+| `GROQ_MODEL` | Primary Groq model | `qwen/qwen3.8-27b` |
+| `CORS_ORIGINS` | JSON array of allowed origins | `["http://localhost:5173","http://localhost:3000"]` |
+| `VITE_API_URL` | Optional API base URL for `frontend/` | `""` (uses Vite proxy `/api`) |
+
+---
+
+## How to Run
+
+### Docker Compose (Recommended)
+
+```bash
 make up
 ```
-API Documentation will be live at: **[http://localhost:8000/api/docs](http://localhost:8000/api/docs)**
 
-Or run the backend manually against Docker Postgres:
+Backend API and interactive OpenAPI docs will be available at:
+- **Swagger UI:** [http://localhost:8000/api/docs](http://localhost:8000/api/docs)
+- **ReDoc:** [http://localhost:8000/api/redoc](http://localhost:8000/api/redoc)
+
+### Manual Local Development
+
+**Backend:**
 ```bash
 docker compose up -d db
 cd backend
-python3 -m venv venv
-source venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env
 alembic upgrade head
-python3 -m uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload --port 8000
 ```
 
-### 3. Environment Variables & Vercel Deployment
-- `DATABASE_URL`: **Pooled** PostgreSQL connection string used at runtime (e.g., Neon `-pooler` or Supabase PgBouncer port `6543`). On Vercel, the engine automatically uses `NullPool` + `pool_pre_ping=True`.
-- `DIRECT_URL`: **Direct (unpooled)** PostgreSQL connection string used by Alembic for schema migrations.
-- `SECRET_KEY`, `GROQ_API_KEY`, `GROQ_MODEL`, `CORS_ORIGINS`.
-
-Before deploying to Vercel, run migrations against your production `DIRECT_URL`:
-```bash
-cd backend
-DIRECT_URL="postgresql+psycopg://..." alembic upgrade head
-```
-
-### 4. Legacy SQLite Migration (One-Time)
-If migrating data from legacy `peblo.db` files into PostgreSQL, run the one-off migration script (safe to delete afterwards):
-```bash
-DIRECT_URL="postgresql+psycopg://..." python scripts/migrate_sqlite_to_postgres.py
-```
-
-### 5. Frontend Setup
-In a new terminal window:
+**Frontend:**
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-Open **[http://localhost:5173](http://localhost:5173)** in your browser.
+Open [http://localhost:5173](http://localhost:5173).
 
-### 6. Run the Pytest Test Suite & Linter
+---
+
+## Testing & Linting
+
 ```bash
+# Run full backend pytest suite against Docker Postgres + pgvector
 make test
+
+# Lint backend (Ruff) and frontend (ESLint)
 make lint
+make lint-frontend
+
+# Format Python code
+make format
+
+# Production frontend build
+make build-frontend
 ```
 
 ---
 
-## 📂 Project Directory Structure
+## License
 
-```
-Peblo/
-├── .github/
-│   └── workflows/
-│       └── ci.yml               # Automated GitHub Actions CI workflow
-├── api/
-│   ├── index.py                 # Vercel Serverless Python entrypoint
-│   └── requirements.txt         # Production serverless runtime dependencies
-├── backend/
-│   ├── app/
-│   │   ├── api/                 # REST endpoints (auth, notes, ai, tags, dashboard)
-│   │   ├── core/                # JWT security, config, and dependency injection
-│   │   ├── db/                  # SQLAlchemy session & dynamic DB URL routing
-│   │   ├── models/              # Database models (User, Note, Embedding, Tag)
-│   │   ├── schemas/             # Pydantic v2 schemas for request/response validation
-│   │   └── services/            # Semantic RAG engine & Groq streaming service
-│   ├── tests/                   # 34 comprehensive automated Pytest test cases
-│   └── requirements.txt         # Backend Python dependencies
-├── frontend/
-│   ├── src/
-│   │   ├── components/          # UI components, ConflictModal, Copilot Drawer
-│   │   ├── context/             # AuthContext and ThemeContext state providers
-│   │   ├── hooks/               # Custom hooks (useNotes, useAI, useDebounce)
-│   │   ├── pages/               # NoteEditor, Dashboard, Notes, Auth pages
-│   │   └── services/            # Axios API client and SSE streaming helper
-│   ├── package.json             # Frontend dependencies & scripts
-│   └── vite.config.js           # Vite development server configuration
-├── vercel.json                  # Production deployment & route rewrite config
-└── README.md                    # Project documentation
-```
-
----
-
-## 🤝 Contributing
-
-Contributions, issues, and feature requests are welcome! Feel free to check the issues page or submit a PR.
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'feat: add some amazing feature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
----
-
-## 📄 License
-
-Distributed under the **MIT License**. See `LICENSE` for more information.
-
----
-
-<p align="center">
-  Crafted with precision by <a href="https://github.com/Spidey173"><b>Pruthvi R</b></a>
-</p>
+MIT License — crafted by [Pruthvi R](https://github.com/Spidey173).
