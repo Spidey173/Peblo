@@ -1,0 +1,42 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: peblo-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-peblo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-peblo}
+      POSTGRES_DB: ${POSTGRES_DB:-peblo}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-peblo} -d ${POSTGRES_DB:-peblo}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: peblo-backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-peblo}:${POSTGRES_PASSWORD:-peblo}@db:5432/${POSTGRES_DB:-peblo}
+      DIRECT_URL: postgresql+psycopg://${POSTGRES_USER:-peblo}:${POSTGRES_PASSWORD:-peblo}@db:5432/${POSTGRES_DB:-peblo}
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_MODEL: ${GROQ_MODEL:-qwen/qwen3.8-27b}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:5173","http://localhost:3000"]}
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
